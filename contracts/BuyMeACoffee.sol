@@ -20,4 +20,41 @@ contract BuyMeACoffee {
         string name;
         string message;
     }
+
+    // List of all memos recieved from friends
+    Memo[] memos;
+
+    // address of contract deployer
+    address payable owner;
+
+    constructor() {
+        owner = payable(msg.sender);
+    }
+
+    /**
+    * @dev to buy a cofffee for contract owner
+    * @param _name name of the coffee buyer
+    * @param _message a nice message from the coffee buyer
+     */
+    function buyCoffee(string memory _name, string memory _message) public payable {
+        // Revert function if no eth is sent
+        require(msg.value > 0, "Unable to buy coffee with 0 eth");
+
+        // Add the memo to storage
+        memos.push(Memo(
+            msg.sender,
+            block.timestamp,
+            _name,
+            _message
+        ));
+
+        // Emit a log event when a new memo is created
+        emit NewMemo(
+            msg.sender,
+            block.timestamp,
+            _name,
+            _message
+        );
+    }
+
 }
