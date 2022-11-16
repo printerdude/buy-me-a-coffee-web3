@@ -57,4 +57,17 @@ contract BuyMeACoffee {
         );
     }
 
+    /**
+    * @dev send entire contract balance to the owner
+     */
+    function witdrawTips() public {
+        require(owner.send(address(this).balance));
+    }
+
+    /**
+    * @dev retrieve all the memos stored on the blockchain
+     */
+    function getMemos() public view returns(Memo[] memory) {
+    return memos;
+    }
 }
