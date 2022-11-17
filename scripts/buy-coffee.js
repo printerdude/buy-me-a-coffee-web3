@@ -8,7 +8,7 @@ const hre = require("hardhat");
 
 // Return the ether balance of a given address
 async function getBalance(address) {
-  const balanceBigInt = await hre.waffle.provider.getBalance(address);
+  const balanceBigInt = await hre.ethers.provider.getBalance(address);
   return hre.ethers.utils.formatEther(balanceBigInt);
 }
 
@@ -16,7 +16,7 @@ async function getBalance(address) {
 async function printBalances(addresses) {
   let idx = 0;
   for (const address of addresses) {
-    console.log(`Address ${idx} balance:` await getBalance(address));
+    console.log(`Address ${idx} balance:`, await getBalance(address));
     idx++;
   }
 }
@@ -33,20 +33,46 @@ async function printMemos(memos) {
 }
 
 async function main() {
-  const currentTimestampInSeconds = Math.round(Date.now() / 1000);
-  const ONE_YEAR_IN_SECS = 365 * 24 * 60 * 60;
-  const unlockTime = currentTimestampInSeconds + ONE_YEAR_IN_SECS;
+	// Get Example Accounts
+	const [owner, tipper, tipper2, tipper3] = await hre.ethers.getSigners();
 
-  const lockedAmount = hre.ethers.utils.parseEther("1");
+	// Get the contract to deploy & deploy
+	const BuyMeACoffee = await hre.ethers.getContractFactory('BuyMeACoffee');
+	const buyMeACoffee = await BuyMeACoffee.deploy();
+	await buyMeACoffee.deployed();
+	console.log('BuyMeACoffee deployed to ', buyMeACoffee.address);
 
-  const Lock = await hre.ethers.getContractFactory("Lock");
-  const lock = await Lock.deploy(unlockTime, { value: lockedAmount });
+	// Check balances before the coffee purchase
+	const addresses = [owner.address, tipper.address, buyMeACoffee.address];
+	console.log('== start ==');
+	await printBalances(addresses);
 
-  await lock.deployed();
+	// Buy the owner a few coffees
+	const tip = { value: hre.ethers.utils.parseEther('1') };
+	await buyMeACoffee.connect(tipper).buyCoffee('Brad', 'Amazing person', tip);
+	await buyMeACoffee
+		.connect(tipper2)
+		.buyCoffee('Chad', 'Among us is still cool', tip);
+	await buyMeACoffee
+		.connect(tipper3)
+		.buyCoffee('Dad', 'You are doing great', tip);
 
-  console.log(
-    `Lock with 1 ETH and unlock timestamp ${unlockTime} deployed to ${lock.address}`
-  );
+	// Check balances after coffee purchase
+	console.log('== Bought Coffee ==');
+	await printBalances(addresses);
+
+	// Withdraw funds
+	await buyMeACoffee.connect(owner).withdrawTips();
+
+	// Check balances after tip withdrawal
+	console.log('== Tips Withdrawn ==');
+	await printBalances(addresses);
+
+	// Read all memos left for the owner
+	console.log('== memos ==');
+	const memos = await buyMeACoffee.getMemos();
+  printMemos(memos);
+
 }
 
 // We recommend this pattern to be able to use async/await everywhere

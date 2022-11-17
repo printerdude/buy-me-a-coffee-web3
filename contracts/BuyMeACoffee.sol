@@ -60,7 +60,7 @@ contract BuyMeACoffee {
     /**
     * @dev send entire contract balance to the owner
      */
-    function witdrawTips() public {
+    function withdrawTips() public {
         require(owner.send(address(this).balance));
     }
 
